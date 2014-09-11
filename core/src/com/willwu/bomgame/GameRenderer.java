@@ -23,6 +23,7 @@ public class GameRenderer {
 	//graphic assets
 	public static Texture texture;
 	private TextureRegion bombTexture;
+	private TextureRegion bombChargedTexture;
 	
 	
 	// game objects
@@ -49,30 +50,37 @@ public class GameRenderer {
 		texture = new Texture(Gdx.files.internal("bomb.png"));
 		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 		
-		setBombTexture(new TextureRegion(texture, 0, 0, 50, 50));
+		setBombTexture();
 
 		touchPos = new Vector3();
 	}
 
 	public void render(float delta, float runTime) {
 		
-		bombs = world.getBombs();
-		
 		// random generator
 
+		
+		//set initial texture
+		for (int i = 0; i < getBombs().length; i++) { // do columns
+			for (int j = 0; j < getBombs().length; j++) { // do rows
+				getBombs()[i][j].setBombTexture(bombTexture);
+			}
+		}
+		
 		// check if bomb touched
 		if (Gdx.input.isTouched()) {
 			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0); // when the screen is touched, the coordinates are inserted into the vector
 			cam.unproject(touchPos); // calibrates the input to your camera's dimentions
 
-			for (int i = 0; i < bombs.length; i++) { // do columns
-				for (int j = 0; j < bombs.length; j++) { // do rows
-					if (touchPos.x > bombs[i][j].getBomb().x && touchPos.x < bombs[i][j].getBomb().x + bombs[i][j].getBomb().width
-							&& touchPos.y > bombs[i][j].getBomb().y && touchPos.y < bombs[i][j].getBomb().y + bombs[i][j].getBomb().height) {
+			for (int i = 0; i < getBombs().length; i++) { // do columns
+				for (int j = 0; j < getBombs().length; j++) { // do rows
+					
+					if (touchPos.x > getBombs()[i][j].getBomb().x && touchPos.x < getBombs()[i][j].getBomb().x + getBombs()[i][j].getBomb().width
+							&& touchPos.y > getBombs()[i][j].getBomb().y && touchPos.y < getBombs()[i][j].getBomb().y + getBombs()[i][j].getBomb().height) {
 
 						// TOUCHED
-						bombs[i][j].onClick();
-
+						getBombs()[i][j].onClick();
+						getBombs()[i][j].setBombTexture(bombChargedTexture);
 					}
 				}
 
@@ -95,10 +103,9 @@ public class GameRenderer {
 		
 		batcher.begin();
 		batcher.disableBlending();
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
-				bombs[i][j].setBombTexture(bombTexture);
-				batcher.draw(bombs[i][j].getBombTexture(), bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);		
+		for (int i = 0; i < getBombs().length; i++) { // do columns
+			for (int j = 0; j < getBombs().length; j++) { // do rows
+				batcher.draw(getBombs()[i][j].getBombTexture(), getBombs()[i][j].getBomb().x, getBombs()[i][j].getBomb().y, getBombs()[i][j].getBomb().width, getBombs()[i][j].getBomb().height);		
 			}
 		}
 		batcher.end();
@@ -108,8 +115,19 @@ public class GameRenderer {
 		return bombTexture;
 	}
 
-	public void setBombTexture(TextureRegion bombTexture) {
-		this.bombTexture = bombTexture;
+	public void setBombTexture() {
+		this.bombTexture = new TextureRegion(texture, 0, 0, 50, 50);
 		this.bombTexture.flip(false, true);
+		
+		this.bombChargedTexture= new TextureRegion(texture, 50, 0, 50, 50);
+		this.bombChargedTexture.flip(false, true);
+	}
+
+	public Bomb[][] getBombs() {
+		return bombs;
+	}
+
+	public void setBombs(Bomb[][] bombs) {
+		this.bombs = bombs;
 	}
 }
