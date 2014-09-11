@@ -2,14 +2,17 @@ package com.willwu.bomgame;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.math.Vector3;
 
 public class GameRenderer {
 
-	private GameWorld myWorld;
+	private GameWorld world;
 	private OrthographicCamera cam;
 	private ShapeRenderer shapeRenderer;
 
@@ -17,6 +20,11 @@ public class GameRenderer {
 
 	private int midPointY;
 
+	//graphic assets
+	public static Texture texture;
+	private TextureRegion bombTexture;
+	
+	
 	// game objects
 	private Bomb[][] bombs;
 
@@ -24,12 +32,12 @@ public class GameRenderer {
 
 	public GameRenderer(GameWorld world, int gameHeight, int midPointY) {
 
-		myWorld = world;
-
-		bombs = world.getBombs();
+		this.world = world;
 
 		this.midPointY = midPointY;
 
+		
+		//initialise everything
 		cam = new OrthographicCamera();
 		cam.setToOrtho(true, 136, gameHeight);
 
@@ -37,14 +45,19 @@ public class GameRenderer {
 		batcher.setProjectionMatrix(cam.combined);
 		shapeRenderer = new ShapeRenderer();
 		shapeRenderer.setProjectionMatrix(cam.combined);
+		
+		texture = new Texture(Gdx.files.internal("bomb.png"));
+		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+		
+		setBombTexture(new TextureRegion(texture, 0, 0, 50, 50));
 
 		touchPos = new Vector3();
 	}
 
 	public void render(float delta, float runTime) {
-		// Tells shapeRenderer to begin drawing filled shapes
-		shapeRenderer.begin(ShapeType.Filled);
-
+		
+		bombs = world.getBombs();
+		
 		// random generator
 
 		// check if bomb touched
@@ -67,15 +80,36 @@ public class GameRenderer {
 
 		}
 
-		// draw bombs
+//		// Tells shapeRenderer to begin drawing filled shapes
+//		shapeRenderer.begin(ShapeType.Filled);
+//		// draw bombs
+//		for (int i = 0; i < bombs.length; i++) { // do columns
+//			for (int j = 0; j < bombs.length; j++) { // do rows
+//
+//				shapeRenderer.setColor(bombs[i][j].getColor());
+//				shapeRenderer.rect(bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
+//			}
+//		}
+//		shapeRenderer.end();
+		
+		
+		batcher.begin();
+		batcher.disableBlending();
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
-
-				shapeRenderer.setColor(bombs[i][j].getColor());
-				shapeRenderer.rect(bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
+				bombs[i][j].setBombTexture(bombTexture);
+				batcher.draw(bombs[i][j].getBombTexture(), bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);		
 			}
 		}
+		batcher.end();
+	}
 
-		shapeRenderer.end();
+	public TextureRegion getBombTexture() {
+		return bombTexture;
+	}
+
+	public void setBombTexture(TextureRegion bombTexture) {
+		this.bombTexture = bombTexture;
+		this.bombTexture.flip(false, true);
 	}
 }

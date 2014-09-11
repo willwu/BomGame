@@ -26,16 +26,20 @@ public class GameWorld {
 		currentState = GameState.MENU;
 		this.midPointY = midPointY;
 
-		bombs = new Bomb[3][3]; // create 3 x 3 grid
+		createBombs();
+	}
 
+	private void createBombs() {
 		// declare bombs
+		bombs = new Bomb[3][3]; // create 3 x 3 grid
+		
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
+				
 				bombs[i][j] = new Bomb(bombWidth, bombHeight);
 				bombs[i][j].createBomb((i + 1) * (bombWidth + bombSpacing), (j + 1) * (bombHeight + bombSpacing));
 			}
 		}
-
 	}
 
 	public Bomb[][] getBombs() {
