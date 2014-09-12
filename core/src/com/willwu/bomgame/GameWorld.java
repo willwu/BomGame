@@ -6,13 +6,14 @@ public class GameWorld {
 
 	private int score = 0;
 	private float runTime = 0;
-	private int midPointY;
+	private float gameWidth;
+	private float gameHeight;
 	private GameRenderer renderer;
 	
 	
-	private int bombWidth = 20;
-	private int bombHeight = 20;
-	private int bombSpacing = 3;
+	private  int bombWidth = 20;
+	private static final int bombHeight = 20;
+	private static final int bombSpacing = 3;
 	
 	
 
@@ -22,9 +23,10 @@ public class GameWorld {
 		MENU, READY, RUNNING, GAMEOVER, HIGHSCORE
 	}
 
-	public GameWorld(int midPointY) {
+	public GameWorld(float gameWidth, float gameHeight) {
 		currentState = GameState.MENU;
-		this.midPointY = midPointY;
+		this.gameWidth = gameWidth;
+		this.gameHeight = gameHeight;
 
 		createBombs();
 	}
@@ -33,11 +35,25 @@ public class GameWorld {
 		// declare bombs
 		bombs = new Bomb[3][3]; // create 3 x 3 grid
 		
+		int widthSpacer = (int) gameWidth / 3;
+		int heightSpacer = (int) gameHeight / 3;
+		
+		bombWidth = (int) (gameWidth * 0.2);
+		
+		int xDraw = (widthSpacer - bombWidth) / 2;
+		System.out.println("game width is " + gameWidth);
+		System.out.println("game height is " + gameHeight);
+		System.out.println("widthspacer is " + widthSpacer);
+		System.out.println("xdraw is " + xDraw);
+		System.out.println("bombwidth is " + bombWidth);
+		
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
 				
-				bombs[i][j] = new Bomb(bombWidth, bombHeight);
-				bombs[i][j].createBomb((i + 1) * (bombWidth + bombSpacing), (j + 1) * (bombHeight + bombSpacing));
+				bombs[i][j] = new Bomb(bombWidth, bombWidth);
+				
+				bombs[i][j].createBomb((i * widthSpacer) + xDraw, xDraw + j * (bombWidth + xDraw));
+				System.out.println("created bomb at " + ((i * widthSpacer) + xDraw) + " " +  (j * bombWidth + xDraw));
 			}
 		}
 	}

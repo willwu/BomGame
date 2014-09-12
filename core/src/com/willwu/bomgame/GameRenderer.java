@@ -5,6 +5,7 @@ import java.util.Random;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
@@ -29,55 +30,89 @@ public class GameRenderer {
 	private static final float BOMB_ANIMATION_TIME = 2f;
 
 	// graphic assets
-	public static Texture texture; // initial bomb texture
+	private Texture texture; // initial bomb texture
 	private TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
 
 	// sound assets
-	Sound correct = Gdx.audio.newSound(Gdx.files.internal("coin.wav"));
-	Sound boom = Gdx.audio.newSound(Gdx.files.internal("boom.wav"));
-	Music music = Gdx.audio.newMusic(Gdx.files.internal("cc.wav"));
+	public Sound correct, boom;
+	public Music intro, loop;
 
 	// animation objects
 	private Animation[][] bombAnimation;
-	private float[][] stateTime;
+	// private float[][] stateTime;
 
 	// game objects
 	private Bomb[][] bombs;
 
-	Vector3 touchPos; // creates a vector3 object for our touch event
-
-	public GameRenderer(GameWorld world, int gameHeight, int midPointY) {
+	public GameRenderer(GameWorld world, float gameWidth, float gameHeight) {
 
 		this.world = world;
 
-		this.midPointY = midPointY;
+		// this.midPointY = midPointY;
 
 		// initialise everything
 		cam = new OrthographicCamera();
-		cam.setToOrtho(true, 136, gameHeight);
+		cam.setToOrtho(true, gameWidth, gameHeight);
 
 		batcher = new SpriteBatch();
 		batcher.setProjectionMatrix(cam.combined);
 		shapeRenderer = new ShapeRenderer();
 		shapeRenderer.setProjectionMatrix(cam.combined);
 
-		texture = new Texture(Gdx.files.internal("bomb.png"));
-		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
-
-		touchPos = new Vector3();
-
+		initAssets();
 		bombs = world.getBombs();
 
-		setupBombGraphic();
+		setupBombGraphics();
 
 		countDown = COUNTDOWN_RESET_TIME;
-		music.setLooping(true);
-		music.play();
+
+	}
+
+	private void initAssets() {
+		texture = AssetLoader.texture;
+		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+
+		correct = AssetLoader.correct;
+		boom = AssetLoader.boom;
+		intro = AssetLoader.intro;
+		loop = AssetLoader.loop;
+
+		intro.setLooping(false);
+		intro.play();
+		loop.setLooping(true);
 	}
 
 	public void render(float delta, float runTime) {
 
+		if (!intro.isPlaying() && !loop.isPlaying()) {
+			loop.play();
+		}
+
 		// random generator
+		chargeRandomBomb(delta);
+
+		batcher.begin();
+		batcher.disableBlending();
+
+		// draw standard bomb
+		for (int i = 0; i < bombs.length; i++) { // do columns
+			for (int j = 0; j < bombs.length; j++) { // do rows
+
+				// if not charged
+				if (!bombs[i][j].isCharged()) {
+					// draw bomb normally
+					drawStaticBomb(i, j);
+				} else {
+					// carry on drawing animation
+					drawSingleBomb(delta, i, j);
+				}
+			}
+		}
+
+		batcher.end();
+	}
+
+	private void chargeRandomBomb(float delta) {
 		countDown -= delta;
 		if (countDown <= 0) {
 			int row = 0;
@@ -93,59 +128,6 @@ public class GameRenderer {
 			// }while(!bombs[row][col].isCharged());
 			countDown = COUNTDOWN_RESET_TIME; // reset countdown
 		}
-
-		batcher.begin();
-		batcher.disableBlending();
-
-		// check if bomb touched
-		if (Gdx.input.justTouched()) {
-			touchPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-			cam.unproject(touchPos); // calibrate touch coord to camera
-
-			for (int i = 0; i < bombs.length; i++) { // do columns
-				for (int j = 0; j < bombs.length; j++) { // do rows
-
-					// check if touched a bomb
-					if (touchPos.x > bombs[i][j].getBomb().x && touchPos.x < bombs[i][j].getBomb().x + bombs[i][j].getBomb().width
-							&& touchPos.y > bombs[i][j].getBomb().y && touchPos.y < bombs[i][j].getBomb().y + bombs[i][j].getBomb().height) {
-
-						// TOUCHED
-						// if (!bombs[i][j].isCharged()) {
-						// bombs[i][j].setCharged(true);
-						// System.out.println("charging bomb " + i + " " + j);
-						// drawOneBomb(stateTime[i][j], i, j);
-						// }
-						if (bombs[i][j].isCharged()) {
-							bombs[i][j].setCharged(false);
-							stateTime[i][j] = 0;
-							System.out.println("good job!");
-							correct.play();
-						} else {
-							System.out.println("u fucked up bro! touched an uncharged bomb");
-							boom.play();
-						}
-					}
-				}
-			}
-
-		} else { // if not touched
-			// draw standard bomb
-			for (int i = 0; i < bombs.length; i++) { // do columns
-				for (int j = 0; j < bombs.length; j++) { // do rows
-
-					// if not charged
-					if (!bombs[i][j].isCharged()) {
-						// draw bomb normally
-						drawStaticBomb(i, j);
-					} else {
-						// carry on drawing animation
-						drawOneBomb(delta, i, j);
-					}
-				}
-			}
-		}
-
-		batcher.end();
 	}
 
 	private int randomGenerator() {
@@ -158,24 +140,27 @@ public class GameRenderer {
 		batcher.draw(bombTexture1, bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
 	}
 
-	private void drawOneBomb(float delta, int i, int j) {
-		stateTime[i][j] += delta;
+	private void drawSingleBomb(float delta, int i, int j) {
 
-		if (!bombAnimation[i][j].isAnimationFinished(stateTime[i][j])) {
-			batcher.draw(bombAnimation[i][j].getKeyFrame(stateTime[i][j], false), bombs[i][j].getX(), bombs[i][j].getY(),
+		float currentStateTime = bombs[i][j].getStateTime() + delta;
+		bombs[i][j].setStateTime(currentStateTime);
+
+		// draw animation
+		if (!bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
+			batcher.draw(bombAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX(), bombs[i][j].getY(),
 					bombs[i][j].getWidth() / 2.0f, bombs[i][j].getHeight() / 2.0f, bombs[i][j].getWidth(), bombs[i][j].getHeight(), 1, 1, 0);
 		}
 
 		// reset charge when animation finished
-		if (bombAnimation[i][j].isAnimationFinished(stateTime[i][j])) {
+		if (bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
 			bombs[i][j].setCharged(false);
-			stateTime[i][j] = 0;
+			bombs[i][j].setStateTime(0);
 			System.out.println("ur too slow mate, bomb exploded!");
 			boom.play();
 		}
 	}
 
-	private void setupBombGraphic() {
+	private void setupBombGraphics() {
 		bombTexture1 = new TextureRegion(texture, 0, 0, 50, 50);
 		bombTexture1.flip(false, true);
 		bombTexture2 = new TextureRegion(texture, 50, 0, 50, 50);
@@ -186,12 +171,10 @@ public class GameRenderer {
 		TextureRegion[] bombTexture = { bombTexture1, bombTexture2, bombTexture3 };
 
 		bombAnimation = new Animation[bombs.length][bombs.length];
-		stateTime = new float[bombs.length][bombs.length];
 
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
 				bombAnimation[i][j] = new Animation(0.67f, bombTexture);
-				stateTime[i][j] = 0;
 				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
 			}
 		}

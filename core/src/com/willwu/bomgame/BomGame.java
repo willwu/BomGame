@@ -15,14 +15,16 @@ public class BomGame extends ApplicationAdapter {
 
 	@Override
 	public void create() {
-		batch = new SpriteBatch();
-		img = new Texture("badlogic.jpg");
-
+		AssetLoader.load();
 		screen = new GameScreen();
+
+		
 	}
 
 	@Override
 	public void render() {
+		 Gdx.gl.glClearColor(0, 0, 0, 1);
+		 Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		screen.render(Gdx.graphics.getDeltaTime());
 	}
 }

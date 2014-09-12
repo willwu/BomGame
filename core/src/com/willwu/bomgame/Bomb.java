@@ -15,6 +15,8 @@ public class Bomb {
 	private boolean isCharged = false;
 
 	private Rectangle rect;
+	
+	private float stateTime = 0;
 
 	public Bomb(int width, int height) {
 		this.setWidth(width);
@@ -33,17 +35,17 @@ public class Bomb {
 
 	public void onClick() {
 
-		// if (isCharged) {
-		// // RESET
-		// setColor(new Color(255, 0, 0, 1));
-		// isCharged = true;
-		// // AssetLoader.flap.play();
-		//
-		// } else {
-		// // if touched and bomb is not charged
-		// // EXPLODE
-		// setColor(new Color(0, 0, 255, 1));
-		// }
+		System.out.println("TOUCH REGISTEREDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
+		// TOUCHED
+		if (isCharged()) {
+			setCharged(false);
+			setStateTime(0);
+			System.out.println("good job!");
+			AssetLoader.correct.play();
+		} else {
+			System.out.println("u fucked up bro! touched an uncharged bomb");
+			AssetLoader.boom.play();
+		}
 	}
 
 	public int getX() {
@@ -84,6 +86,14 @@ public class Bomb {
 
 	public void setHeight(int height) {
 		this.height = height;
+	}
+
+	public float getStateTime() {
+		return stateTime;
+	}
+
+	public void setStateTime(float stateTime) {
+		this.stateTime = stateTime;
 	}
 
 }
