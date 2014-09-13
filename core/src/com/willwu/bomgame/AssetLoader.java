@@ -12,7 +12,7 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 public class AssetLoader {
 
 	public static Sound correct, boom;
-	public static Music intro, loop;
+	public static Music intro, loop, rrIntro, rrSuper, rrOut, rr, rrEndLoop;
 	public static Texture texture; // initial bomb texture
 	public static TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
 
@@ -28,6 +28,13 @@ public class AssetLoader {
 		intro = Gdx.audio.newMusic(Gdx.files.internal("intro.ogg"));
 		loop = Gdx.audio.newMusic(Gdx.files.internal("loop.ogg"));
 
+		rrIntro = Gdx.audio.newMusic(Gdx.files.internal("RRintro.ogg"));
+		rrSuper = Gdx.audio.newMusic(Gdx.files.internal("RRsuper.ogg"));
+		rrOut = Gdx.audio.newMusic(Gdx.files.internal("RRout.ogg"));
+		
+		rr = Gdx.audio.newMusic(Gdx.files.internal("rrbig.ogg"));
+		rrEndLoop = Gdx.audio.newMusic(Gdx.files.internal("rrendloop.ogg"));
+		
 		// load textures
 		texture = new Texture(Gdx.files.internal("bomb.png"));
 		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
@@ -35,7 +42,6 @@ public class AssetLoader {
 		// load font
 //		font = new BitmapFont(Gdx.files.internal("whitetext.fnt"));
 //		font.setScale(.15f, -.15f);
-		
 		font = new BitmapFont(Gdx.files.internal("font.txt"));
 		font.setScale(.09f, -.1f);
 
@@ -46,6 +52,13 @@ public class AssetLoader {
 		if (!prefs.contains("highScore")) {
 			prefs.putInteger("highScore", 0);
 		}
+		
+		bombTexture1 = new TextureRegion(texture, 0, 0, 50, 50);
+		bombTexture1.flip(false, true);
+		bombTexture2 = new TextureRegion(texture, 50, 0, 50, 50);
+		bombTexture2.flip(false, true);
+		bombTexture3 = new TextureRegion(texture, 100, 0, 50, 50);
+		bombTexture3.flip(false, true);
 	}
 
 	public static void setHighScore(int highscore) {
@@ -65,6 +78,11 @@ public class AssetLoader {
 		boom.dispose();
 		intro.dispose();
 		loop.dispose();
+		
+		rrIntro.dispose();
+		rr.dispose();
+		rrOut.dispose();
+		rrSuper.dispose();
 
 		font.dispose();
 	}

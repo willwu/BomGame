@@ -46,6 +46,7 @@ project(":android") {
 
     dependencies {
         compile project(":core")
+		compile fileTree(dir: '../libs', include: '*.jar')
         compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
         natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
@@ -84,9 +85,9 @@ project(":html") {
 project(":core") {
     apply plugin: "java"
 
-
     dependencies {
         compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+		compile fileTree(dir: '../libs', include: '*.jar')
     }
 }
 
