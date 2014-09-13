@@ -1,10 +1,12 @@
 package com.willwu.bomgame;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class AssetLoader {
@@ -13,15 +15,57 @@ public class AssetLoader {
 	public static Music intro, loop;
 	public static Texture texture; // initial bomb texture
 	public static TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
-	
-	public static void load(){
-		correct = Gdx.audio.newSound(Gdx.files.internal("coin.wav"));
-		boom = Gdx.audio.newSound(Gdx.files.internal("boom.wav"));
+
+	public static BitmapFont font;
+
+	private static Preferences prefs;
+
+	public static void load() {
+
+		// load sounds and music
+		correct = Gdx.audio.newSound(Gdx.files.internal("correct.wav"));
+		boom = Gdx.audio.newSound(Gdx.files.internal("boom.ogg"));
 		intro = Gdx.audio.newMusic(Gdx.files.internal("intro.ogg"));
 		loop = Gdx.audio.newMusic(Gdx.files.internal("loop.ogg"));
-		
-		
+
+		// load textures
 		texture = new Texture(Gdx.files.internal("bomb.png"));
 		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+
+		// load font
+//		font = new BitmapFont(Gdx.files.internal("whitetext.fnt"));
+//		font.setScale(.15f, -.15f);
+		
+		font = new BitmapFont(Gdx.files.internal("font.txt"));
+		font.setScale(.09f, -.1f);
+
+		// setup preferences
+		prefs = Gdx.app.getPreferences("BomGame");
+
+		// create high score
+		if (!prefs.contains("highScore")) {
+			prefs.putInteger("highScore", 0);
+		}
+	}
+
+	public static void setHighScore(int highscore) {
+		prefs.putInteger("highScore", highscore);
+		prefs.flush(); // save that shit
+	}
+
+	public static int getHighScore() {
+		return prefs.getInteger("highScore");
+	}
+
+	public static void dispose() {
+		// clean up
+		texture.dispose();
+
+		correct.dispose();
+		boom.dispose();
+		intro.dispose();
+		loop.dispose();
+
+		font.dispose();
 	}
 }

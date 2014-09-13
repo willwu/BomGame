@@ -50,7 +50,7 @@ public class GameWorld {
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
 				
-				bombs[i][j] = new Bomb(bombWidth, bombWidth);
+				bombs[i][j] = new Bomb(this, bombWidth, bombWidth);
 				
 				bombs[i][j].createBomb((i * widthSpacer) + xDraw, xDraw + j * (bombWidth + xDraw));
 				System.out.println("created bomb at " + ((i * widthSpacer) + xDraw) + " " +  (j * bombWidth + xDraw));
@@ -68,6 +68,18 @@ public class GameWorld {
 
 	public void update(float delta) {
 		runTime += delta;
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void addScore(int increment) {
+		this.score += increment;
+	}
+	
+	public void subtractScore(int decrement) {
+		this.score -= decrement;
 	}
 
 }

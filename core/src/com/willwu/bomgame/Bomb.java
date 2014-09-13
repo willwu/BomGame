@@ -6,6 +6,8 @@ import com.badlogic.gdx.math.Rectangle;
 
 public class Bomb {
 
+	GameWorld world;
+	
 	private int x;
 	private int y;
 
@@ -18,7 +20,8 @@ public class Bomb {
 	
 	private float stateTime = 0;
 
-	public Bomb(int width, int height) {
+	public Bomb(GameWorld world, int width, int height) {
+		this.world = world;
 		this.setWidth(width);
 		this.setHeight(height);
 	}
@@ -42,9 +45,11 @@ public class Bomb {
 			setStateTime(0);
 			System.out.println("good job!");
 			AssetLoader.correct.play();
+			world.addScore(1);
 		} else {
 			System.out.println("u fucked up bro! touched an uncharged bomb");
 			AssetLoader.boom.play();
+			world.subtractScore(1);
 		}
 	}
 

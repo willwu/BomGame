@@ -4,16 +4,19 @@ import java.util.Random;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Music.OnCompletionListener;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Timer;
+import com.badlogic.gdx.utils.Timer.Task;
 
 public class GameRenderer {
 
@@ -23,15 +26,16 @@ public class GameRenderer {
 
 	private SpriteBatch batcher;
 
-	private int midPointY;
 	private float countDown;
 
 	private static final float COUNTDOWN_RESET_TIME = 0.25f;
-	private static final float BOMB_ANIMATION_TIME = 2f;
+	private static final float BOMB_ANIMATION_FRAME_TIME = 1f;
+	private static final int COUNTDOWN_TIMER_TIME = 10;
 
 	// graphic assets
 	private Texture texture; // initial bomb texture
 	private TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
+	private BitmapFont font;
 
 	// sound assets
 	public Sound correct, boom;
@@ -39,10 +43,11 @@ public class GameRenderer {
 
 	// animation objects
 	private Animation[][] bombAnimation;
-	// private float[][] stateTime;
 
 	// game objects
 	private Bomb[][] bombs;
+
+	float countdownTimer = COUNTDOWN_TIMER_TIME;
 
 	public GameRenderer(GameWorld world, float gameWidth, float gameHeight) {
 
@@ -78,15 +83,24 @@ public class GameRenderer {
 		loop = AssetLoader.loop;
 
 		intro.setLooping(false);
-		intro.play();
 		loop.setLooping(true);
+		intro.setOnCompletionListener(new OnCompletionListener() {
+
+			@Override
+			public void onCompletion(Music music) {
+				loop.play();
+			}
+		});
+		intro.play();
+
+		font = AssetLoader.font;
 	}
 
 	public void render(float delta, float runTime) {
 
-		if (!intro.isPlaying() && !loop.isPlaying()) {
-			loop.play();
-		}
+		// clear screen
+		Gdx.gl.glClearColor(0, 0, 0, 1);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
 		// random generator
 		chargeRandomBomb(delta);
@@ -109,7 +123,37 @@ public class GameRenderer {
 			}
 		}
 
+		int score = world.getScore();
+		drawScore(score);
+		drawHighScore(score);
+
+		handleCountdownTimer(delta);
+
 		batcher.end();
+	}
+
+	private void handleCountdownTimer(float delta) {
+		countdownTimer -= delta;
+		if(countdownTimer <= 0){
+			countdownTimer = COUNTDOWN_TIMER_TIME; //reset countdown timer
+		}
+		font.setColor(1, 0, 0, 1);
+		font.draw(batcher, "Time:" + String.format("%.03f", countdownTimer), bombs[0][0].getX(), cam.viewportHeight / 2 - (2 * font.getXHeight()) + (2 * 5));
+	}
+
+	private void drawScore(int score) {
+		font.setColor(0, 1, 0, 1);
+		// font.draw(batcher, "FPS:" + Gdx.graphics.getFramesPerSecond(), bombs[0][0].getX(), cam.viewportHeight / 2);
+
+		font.draw(batcher, "Score:" + score, bombs[0][0].getX(), cam.viewportHeight / 2);
+	}
+
+	private void drawHighScore(int score) {
+		if (score > AssetLoader.getHighScore()) {
+			AssetLoader.setHighScore(score);
+		}
+		font.setColor(1, 1, 0, 1);
+		font.draw(batcher, "High Score:" + AssetLoader.getHighScore(), bombs[0][0].getX(), cam.viewportHeight / 2 - font.getXHeight() + 5);
 	}
 
 	private void chargeRandomBomb(float delta) {
@@ -157,6 +201,7 @@ public class GameRenderer {
 			bombs[i][j].setStateTime(0);
 			System.out.println("ur too slow mate, bomb exploded!");
 			boom.play();
+			world.subtractScore(1);
 		}
 	}
 
@@ -168,13 +213,13 @@ public class GameRenderer {
 		bombTexture3 = new TextureRegion(texture, 100, 0, 50, 50);
 		bombTexture3.flip(false, true);
 
-		TextureRegion[] bombTexture = { bombTexture1, bombTexture2, bombTexture3 };
+		TextureRegion[] bombTexture = { bombTexture2, bombTexture3 };
 
 		bombAnimation = new Animation[bombs.length][bombs.length];
 
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
-				bombAnimation[i][j] = new Animation(0.67f, bombTexture);
+				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, bombTexture);
 				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
 			}
 		}
