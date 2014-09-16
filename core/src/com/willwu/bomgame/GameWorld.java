@@ -80,6 +80,52 @@ public class GameWorld {
 
 	public void update(float delta) {
 		runTime += delta;
+		
+		switch (currentState) {
+		case MENU:
+//			updateReady(delta);
+			break;
+
+		case RUNNING:
+//			updateRunning(delta);
+			break;
+		default:
+			break;
+		}
+	}
+	
+	public void setRunning() {
+		currentState = GameState.RUNNING;
+	}
+	
+	public void setReady() {
+		currentState = GameState.READY;
+		renderer.prepareTransition(0, 0, 0, 1f);
+	}
+	
+	public void restart() {
+		renderer.restart();
+//		setReady();
+	}
+	
+	public boolean isReady() {
+		return currentState == GameState.READY;
+	}
+
+	public boolean isGameOver() {
+		return currentState == GameState.GAMEOVER;
+	}
+
+	public boolean isHighScore() {
+		return currentState == GameState.HIGHSCORE;
+	}
+	
+	public boolean isMenu() {
+		return currentState == GameState.MENU;
+	}
+
+	public boolean isRunning() {
+		return currentState == GameState.RUNNING;
 	}
 
 	public int getScore() {

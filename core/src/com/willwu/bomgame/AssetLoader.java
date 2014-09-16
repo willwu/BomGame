@@ -13,7 +13,7 @@ public class AssetLoader {
 
 	public static Sound correct, boom;
 	public static Music intro, loop, rrIntro, rrSuper, rrOut, rr, rrEndLoop;
-	public static Texture texture; // initial bomb texture
+	public static Texture texture, aniTexture; // initial bomb texture
 	public static TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
 
 	public static BitmapFont font;
@@ -38,6 +38,9 @@ public class AssetLoader {
 		// load textures
 		texture = new Texture(Gdx.files.internal("bomb.png"));
 		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+		
+		aniTexture = new Texture(Gdx.files.internal("bombani.png"));
+		aniTexture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
 
 		// load font
 //		font = new BitmapFont(Gdx.files.internal("whitetext.fnt"));
@@ -54,11 +57,9 @@ public class AssetLoader {
 		}
 		
 		bombTexture1 = new TextureRegion(texture, 0, 0, 50, 50);
-		bombTexture1.flip(false, true);
 		bombTexture2 = new TextureRegion(texture, 50, 0, 50, 50);
-		bombTexture2.flip(false, true);
 		bombTexture3 = new TextureRegion(texture, 100, 0, 50, 50);
-		bombTexture3.flip(false, true);
+		
 	}
 
 	public static void setHighScore(int highscore) {
@@ -73,6 +74,7 @@ public class AssetLoader {
 	public static void dispose() {
 		// clean up
 		texture.dispose();
+		aniTexture.dispose();
 
 		correct.dispose();
 		boom.dispose();
@@ -83,6 +85,9 @@ public class AssetLoader {
 		rr.dispose();
 		rrOut.dispose();
 		rrSuper.dispose();
+		
+		rr.dispose();
+		rrEndLoop.dispose();
 
 		font.dispose();
 	}

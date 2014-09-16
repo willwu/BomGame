@@ -1,6 +1,13 @@
 package com.willwu.bomgame;
 
+import java.util.List;
 import java.util.Random;
+
+import TweenAccessors.Value;
+import TweenAccessors.ValueAccessor;
+import aurelienribon.tweenengine.Tween;
+import aurelienribon.tweenengine.TweenEquations;
+import aurelienribon.tweenengine.TweenManager;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
@@ -16,6 +23,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 
 public class GameRenderer {
 
@@ -29,12 +37,12 @@ public class GameRenderer {
 
 	private static float COUNTDOWN_RESET_TIME = 0.25f;
 	private static float SUPER_COUNTDOWN_RESET_TIME = 0.1f;
-	private static final float BOMB_ANIMATION_FRAME_TIME = 1f;
+	private static final float BOMB_ANIMATION_FRAME_TIME = 0.2f;
 
 	private static final int COUNTDOWN_TIMER_TIME = 30;
 
 	// graphic assets
-	private Texture texture; // initial bomb texture
+	private Texture texture, aniTexture; // initial bomb texture
 	private TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
 	private BitmapFont font;
 
@@ -83,39 +91,52 @@ public class GameRenderer {
 
 		bombSpawnCountdown = COUNTDOWN_RESET_TIME;
 
+		transitionColor = new Color();
+		prepareTransition(255, 255, 255, .5f);
+
 	}
+	
+	private TextureRegion[][] animated;
 
 	private void initAssets() {
 		texture = AssetLoader.texture;
-		texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+		aniTexture = AssetLoader.aniTexture;
+		
+		animated = TextureRegion.split(aniTexture, 135, 135);
+		
+		for (int i = 0; i < animated[0].length; i++){
+			animated[0][i].flip(false, true);
+		}
+
+		// WHY DOESNT THIS WORK!?!?!
+		// bombTexture1 = AssetLoader.bombTexture1;
+		// bombTexture2 = AssetLoader.bombTexture1;
+		// bombTexture3 = AssetLoader.bombTexture1;
+		
+		
+
+		bombTexture1 = new TextureRegion(texture, 0, 0, 50, 50);
+		bombTexture2 = new TextureRegion(texture, 50, 0, 50, 50);
+		bombTexture3 = new TextureRegion(texture, 100, 0, 50, 50);
+		bombTexture1.flip(false, true);
+		bombTexture2.flip(false, true);
+		bombTexture3.flip(false, true);
 
 		correct = AssetLoader.correct;
 		boom = AssetLoader.boom;
 		intro = AssetLoader.intro;
 		loop = AssetLoader.loop;
 
-		// intro.setLooping(false);
-		//
-		// intro.setOnCompletionListener(new OnCompletionListener() {
-		//
-		// @Override
-		// public void onCompletion(Music music) {
-		// superMode = true;
-		// loop.play();
-		// }
-		// });
-		// intro.play();
-		//
-		// loop.setLooping(false);
-		// loop.setOnCompletionListener(new OnCompletionListener() {
-		//
-		// @Override
-		// public void onCompletion(Music music) {
-		// superMode = false;
-		// loop.setLooping(true);
-		// loop.play();
-		// }
-		// });
+		intro.setLooping(false);
+		loop.setLooping(true);
+		intro.setOnCompletionListener(new OnCompletionListener() {
+
+			@Override
+			public void onCompletion(Music music) {
+				loop.play();
+			}
+		});
+		intro.play();
 
 		// ////////////////////////////////
 
@@ -153,16 +174,25 @@ public class GameRenderer {
 				rrEndLoop.play();
 			}
 		});
-		rr.play();
+		// rr.play();
 
 		font = AssetLoader.font;
+
+		menuButtons = ((InputHandler) Gdx.input.getInputProcessor()).getMenuButtons();
 	}
 
 	public void render(float delta, float runTime) {
 
+		// super mode control via music
 		if (rr.getPosition() >= 8 && rr.getPosition() <= 24) {
+			if (!superMode) {
+				prepareTransition(255, 255, 255, .25f);
+			}
 			superMode = true;
 		} else {
+			if (superMode) {
+				prepareTransition(255, 255, 255, .25f);
+			}
 			superMode = false;
 		}
 
@@ -175,36 +205,45 @@ public class GameRenderer {
 			Gdx.gl.glClearColor(0, 0, 0, 1);
 		}
 
-		// random generator
-		chargeRandomBomb(delta);
-
 		batcher.begin();
 		// batcher.disableBlending();
 		batcher.enableBlending();
 
-		// draw standard bomb
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
+		if (world.isMenu()) {
+			for (SimpleButton button : menuButtons) {
+				button.draw(batcher);
+			}
+		} else if (world.isRunning()) {
 
-				// if not charged
-				if (!bombs[i][j].isCharged()) {
-					// draw bomb normally
-					drawStaticBomb(i, j);
-				} else {
-					// carry on drawing animation
-					drawSingleBomb(delta, i, j);
+			// random generator
+			chargeRandomBomb(delta);
+
+			// draw standard bomb
+			for (int i = 0; i < bombs.length; i++) { // do columns
+				for (int j = 0; j < bombs.length; j++) { // do rows
+
+					// if not charged
+					if (!bombs[i][j].isCharged()) {
+						// draw bomb normally
+						drawStaticBomb(i, j);
+					} else {
+						// carry on drawing animation
+						drawSingleBomb(delta, i, j);
+					}
 				}
 			}
+
+			int score = world.getScore();
+			drawScore(score);
+			drawHighScore(score);
+			handleCountdownTimer(delta);
+			handleSuperModeTimer(delta);
+
 		}
 
-		int score = world.getScore();
-		drawScore(score);
-		drawHighScore(score);
-		handleCountdownTimer(delta);
-
-		handleSuperModeTimer(delta);
-
 		batcher.end();
+
+		drawTransition(delta);
 	}
 
 	private void handleSuperModeTimer(float delta) {
@@ -232,11 +271,7 @@ public class GameRenderer {
 		}
 
 		if (countdownTimer <= 0) {
-			countdownTimer = COUNTDOWN_TIMER_TIME; // reset countdown timer
-			world.resetScore();
-
-			rrEndLoop.stop();
-			rr.play();
+			restart();
 		}
 
 		font.setColor(1, 0, 0, 1);
@@ -245,6 +280,18 @@ public class GameRenderer {
 
 		float boundWidth = font.getBounds(text).width;
 		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, cam.viewportHeight / 2 - (2 * font.getXHeight()) + (2 * 5));
+	}
+
+	public void restart() {
+		countdownTimer = COUNTDOWN_TIMER_TIME; // reset countdown timer
+		world.resetScore();
+
+		intro.stop();
+		loop.stop();
+		rrEndLoop.stop();
+		rr.stop();
+		rr.play();
+		prepareTransition(0, 0, 0, 1f);
 	}
 
 	private void drawScore(int score) {
@@ -299,7 +346,8 @@ public class GameRenderer {
 	}
 
 	private void drawStaticBomb(int i, int j) {
-		batcher.draw(bombTexture1, bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
+//		batcher.draw(bombTexture1, bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
+		batcher.draw(animated[0][0], bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
 	}
 
 	private void drawSingleBomb(float delta, int i, int j) {
@@ -312,31 +360,74 @@ public class GameRenderer {
 			batcher.draw(bombAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX(), bombs[i][j].getY(),
 					bombs[i][j].getWidth() / 2.0f, bombs[i][j].getHeight() / 2.0f, bombs[i][j].getWidth(), bombs[i][j].getHeight(), 1, 1, 0);
 		}
-
-		// reset charge when animation finished
-		if (bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
-			bombs[i][j].setCharged(false);
-			bombs[i][j].setStateTime(0);
+		
+		//explode
+		if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) >= 6 && !bombs[i][j].isExploded()) {
+//			bombs[i][j].setCharged(false);
+//			bombs[i][j].setStateTime(0);
+			bombs[i][j].setExploded(true);
 			System.out.println("ur too slow mate, bomb exploded!");
 			boom.play();
 			world.subtractScore(1);
 		}
+		
+
+		// reset charge when animation finished
+		if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) == 10) {
+//		if (bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
+			bombs[i][j].setCharged(false);
+			bombs[i][j].setStateTime(0);
+			bombs[i][j].setExploded(false);
+//			System.out.println("ur too slow mate, bomb exploded!");
+//			boom.play();
+//			world.subtractScore(1);
+		}
 	}
 
 	private void setupBombGraphics() {
-		bombTexture1 = AssetLoader.bombTexture1;
-		bombTexture2 = AssetLoader.bombTexture1;
-		bombTexture3 = AssetLoader.bombTexture1;
-
-		TextureRegion[] bombTexture = { bombTexture2, bombTexture3 };
+//		TextureRegion[] bombTexture = { bombTexture2, bombTexture3 };
 
 		bombAnimation = new Animation[bombs.length][bombs.length];
 
 		for (int i = 0; i < bombs.length; i++) { // do columns
 			for (int j = 0; j < bombs.length; j++) { // do rows
-				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, bombTexture);
+				
+//				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, bombTexture);
+//				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
+				
+				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, animated[0]);
 				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
 			}
+		}
+	}
+
+	// Tween stuff
+	private TweenManager manager;
+	private Value alpha = new Value();
+
+	// Buttons
+	private List<SimpleButton> menuButtons;
+	private Color transitionColor;
+
+	public void prepareTransition(int r, int g, int b, float duration) {
+		transitionColor.set(r / 255.0f, g / 255.0f, b / 255.0f, 1);
+		alpha.setValue(1);
+		Tween.registerAccessor(Value.class, new ValueAccessor());
+		manager = new TweenManager();
+		Tween.to(alpha, -1, duration).target(0).ease(TweenEquations.easeOutQuad).start(manager);
+	}
+
+	private void drawTransition(float delta) {
+		if (alpha.getValue() > 0) {
+			manager.update(delta);
+			Gdx.gl.glEnable(GL20.GL_BLEND);
+			Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+			shapeRenderer.begin(ShapeType.Filled);
+			shapeRenderer.setColor(transitionColor.r, transitionColor.g, transitionColor.b, alpha.getValue());
+			shapeRenderer.rect(0, 0, 300, 300);
+			shapeRenderer.end();
+			Gdx.gl.glDisable(GL20.GL_BLEND);
+
 		}
 	}
 }

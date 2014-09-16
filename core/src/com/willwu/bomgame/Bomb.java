@@ -19,6 +19,8 @@ public class Bomb {
 	private Rectangle rect;
 	
 	private float stateTime = 0;
+	
+	private boolean exploded = false;
 
 	public Bomb(GameWorld world, int width, int height) {
 		this.world = world;
@@ -40,13 +42,17 @@ public class Bomb {
 
 		System.out.println("TOUCH REGISTEREDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
 		// TOUCHED
-		if (isCharged()) {
+		if (isCharged() && !isExploded()) {
 			setCharged(false);
 			setStateTime(0);
 			System.out.println("good job!");
 			AssetLoader.correct.play();
 			world.addScore(1);
 		} else {
+			setCharged(true);
+//			setExploded(false);
+			setStateTime(6);
+			
 			System.out.println("u fucked up bro! touched an uncharged bomb");
 			AssetLoader.boom.play();
 			world.subtractScore(1);
@@ -99,6 +105,14 @@ public class Bomb {
 
 	public void setStateTime(float stateTime) {
 		this.stateTime = stateTime;
+	}
+
+	public boolean isExploded() {
+		return exploded;
+	}
+
+	public void setExploded(boolean exploded) {
+		this.exploded = exploded;
 	}
 
 }

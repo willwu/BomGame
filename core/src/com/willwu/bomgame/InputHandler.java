@@ -1,14 +1,21 @@
 package com.willwu.bomgame;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.badlogic.gdx.InputProcessor;
 
 public class InputHandler implements InputProcessor {
-	
+
 	private GameWorld world;
-	
+
 	private float scaleFactorX;
 	private float scaleFactorY;
 	private Bomb[][] bombs;
+
+	private List<SimpleButton> menuButtons;
+
+	private SimpleButton playButton;
 
 	public InputHandler(GameWorld world, float scaleFactorX, float scaleFactorY) {
 		this.world = world;
@@ -17,6 +24,10 @@ public class InputHandler implements InputProcessor {
 
 		this.scaleFactorX = scaleFactorX;
 		this.scaleFactorY = scaleFactorY;
+
+		menuButtons = new ArrayList<SimpleButton>();
+		playButton = new SimpleButton(50, 50, 50, 50, AssetLoader.bombTexture2, AssetLoader.bombTexture3);
+		getMenuButtons().add(playButton);
 	}
 
 	@Override
@@ -42,12 +53,18 @@ public class InputHandler implements InputProcessor {
 		screenX = scaleX(screenX);
 		screenY = scaleY(screenY);
 
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
+		if (world.isMenu()) {
+			playButton.isTouchDown(screenX, screenY);
+		}
 
-				// check if touched a bomb
-				if(bombs[i][j].getBomb().contains(screenX, screenY)) {
-					bombs[i][j].onClick();
+		if (world.isRunning()) {
+			for (int i = 0; i < bombs.length; i++) { // do columns
+				for (int j = 0; j < bombs.length; j++) { // do rows
+
+					// check if touched a bomb
+					if (bombs[i][j].getBomb().contains(screenX, screenY)) {
+						bombs[i][j].onClick();
+					}
 				}
 			}
 		}
@@ -57,7 +74,17 @@ public class InputHandler implements InputProcessor {
 
 	@Override
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-		// TODO Auto-generated method stub
+		screenX = scaleX(screenX);
+		screenY = scaleY(screenY);
+		
+		if (world.isMenu()) {
+			if (playButton.isTouchUp(screenX, screenY)) {
+				world.restart();
+				world.setRunning();
+				return true;
+			}
+		}
+
 		return false;
 	}
 
@@ -78,13 +105,17 @@ public class InputHandler implements InputProcessor {
 		// TODO Auto-generated method stub
 		return false;
 	}
-	
+
 	private int scaleX(int screenX) {
 		return (int) (screenX / scaleFactorX);
 	}
 
 	private int scaleY(int screenY) {
 		return (int) (screenY / scaleFactorY);
+	}
+
+	public List<SimpleButton> getMenuButtons() {
+		return menuButtons;
 	}
 
 }
