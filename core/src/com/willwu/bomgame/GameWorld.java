@@ -10,9 +10,7 @@ public class GameWorld {
 	private float gameHeight;
 	private GameRenderer renderer;
 
-	private int bombWidth = 20;
-	private static final int bombHeight = 20;
-	private static final int bombSpacing = 3;
+//	private int bombWidth = 169;
 
 	private GameState currentState;
 
@@ -25,47 +23,55 @@ public class GameWorld {
 		this.gameWidth = gameWidth;
 		this.gameHeight = gameHeight;
 
-		createBombs2();
-		
+		createBombs3();
+
 		currentState = GameState.MENU;
 	}
 
-	private void createBombs() {
+	private int bombColumns = 4;
+	private int bombRows = 3;
+
+//	private void createBombs() {
+//
+//		// declare bombs
+//		bombs = new Bomb[getBombColumns()][getBombRows()]; // create 3 x 3 grid
+//
+//		bombWidth = (int) (gameWidth * 0.2);
+//		int bombSpacer = (int) (bombWidth * 0.2);
+//
+//		int midpointWidth = (int) (gameWidth / 2);
+//		int leftX = midpointWidth - (bombWidth / 2) - bombSpacer - bombWidth;
+//
+//		for (int i = 0; i < getBombColumns(); i++) { // do columns
+//			for (int j = 0; j < getBombRows(); j++) { // do rows
+//
+//				bombs[i][j] = new Bomb(this, bombWidth, bombWidth);
+//				bombs[i][j].createBomb(leftX + (i * bombWidth) + (i * bombSpacer), leftX + (j * bombWidth) + (j * bombSpacer));
+//			}
+//		}
+//	}
+	
+	private void createBombs3() {
+
 		// declare bombs
-		bombs = new Bomb[3][3]; // create 3 x 3 grid
+		bombs = new Bomb[getBombColumns()][getBombRows()]; // create 3 x 3 grid
 
-		int widthSpacer = (int) gameWidth / 3;
+		int bombWidth = AssetLoader.animatedBomb[0][0].getRegionWidth();
+		int bombHeight = AssetLoader.animatedBomb[0][0].getRegionHeight();
+		System.out.println("bomb width is: " + bombWidth);
+		System.out.println("bomb height is: " + bombHeight);
+		
+		int bombSpacer = 150;
 
-		bombWidth = (int) (gameWidth * 0.2);
+		int leftX = 54;
+		int leftY = 150;
 
-		int xDraw = (widthSpacer - bombWidth) / 2;
+		for (int i = 0; i < getBombColumns(); i++) { // do columns
+			for (int j = 0; j < getBombRows(); j++) { // do rows
 
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
-
-				bombs[i][j] = new Bomb(this, bombWidth, bombWidth);
-
-				// bombs[i][j].createBomb((i * widthSpacer) + xDraw, xDraw + j * (bombWidth + xDraw));
-				bombs[i][j].createBomb(xDraw + i * (bombWidth + xDraw), xDraw + j * (bombWidth + xDraw));
-			}
-		}
-	}
-
-	private void createBombs2() {
-		// declare bombs
-		bombs = new Bomb[3][3]; // create 3 x 3 grid
-
-		bombWidth = (int) (gameWidth * 0.2);
-		int bombSpacer = (int) (bombWidth * 0.2);
-
-		int midpointWidth = (int) (gameWidth / 2);
-		int leftX = midpointWidth - (bombWidth / 2) - bombSpacer - bombWidth;
-
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
-
-				bombs[i][j] = new Bomb(this, bombWidth, bombWidth);
-				bombs[i][j].createBomb(leftX + (i * bombWidth) + (i * bombSpacer), leftX + (j * bombWidth) + (j * bombSpacer));
+				bombs[i][j] = new Bomb(this, bombWidth, bombHeight);
+				bombs[i][j].createBomb(leftX + (i * bombWidth), leftY + (j * bombHeight));
+				System.out.println("created bomb at: " + (i * bombWidth) + ",  " +  (leftY + (j * bombHeight)));
 			}
 		}
 	}
@@ -80,34 +86,34 @@ public class GameWorld {
 
 	public void update(float delta) {
 		runTime += delta;
-		
+
 		switch (currentState) {
 		case MENU:
-//			updateReady(delta);
+			// updateReady(delta);
 			break;
 
 		case RUNNING:
-//			updateRunning(delta);
+			// updateRunning(delta);
 			break;
 		default:
 			break;
 		}
 	}
-	
+
 	public void setRunning() {
 		currentState = GameState.RUNNING;
 	}
-	
+
 	public void setReady() {
 		currentState = GameState.READY;
 		renderer.prepareTransition(0, 0, 0, 1f);
 	}
-	
+
 	public void restart() {
 		renderer.restart();
-//		setReady();
+		// setReady();
 	}
-	
+
 	public boolean isReady() {
 		return currentState == GameState.READY;
 	}
@@ -119,7 +125,7 @@ public class GameWorld {
 	public boolean isHighScore() {
 		return currentState == GameState.HIGHSCORE;
 	}
-	
+
 	public boolean isMenu() {
 		return currentState == GameState.MENU;
 	}
@@ -131,7 +137,7 @@ public class GameWorld {
 	public int getScore() {
 		return score;
 	}
-	
+
 	public void resetScore() {
 		score = 0;
 	}
@@ -142,6 +148,22 @@ public class GameWorld {
 
 	public void subtractScore(int decrement) {
 		this.score -= decrement;
+	}
+
+	public int getBombColumns() {
+		return bombColumns;
+	}
+
+	public void setBombColumns(int bombColumns) {
+		this.bombColumns = bombColumns;
+	}
+
+	public int getBombRows() {
+		return bombRows;
+	}
+
+	public void setBombRows(int bombRows) {
+		this.bombRows = bombRows;
 	}
 
 }

@@ -31,20 +31,27 @@ public class GameRenderer {
 	private OrthographicCamera cam;
 	private ShapeRenderer shapeRenderer;
 
+	private float gameWidth, gameHeight;
+
 	private SpriteBatch batcher;
 
 	private float bombSpawnCountdown;
 
-	private static float COUNTDOWN_RESET_TIME = 0.25f;
-	private static float SUPER_COUNTDOWN_RESET_TIME = 0.1f;
+	private static float COUNTDOWN_RESET_TIME = 0.3f;
+	private static float SUPER_COUNTDOWN_RESET_TIME = 0.25f;
 	private static final float BOMB_ANIMATION_FRAME_TIME = 0.2f;
 
 	private static final int COUNTDOWN_TIMER_TIME = 30;
 
 	// graphic assets
-	private Texture texture, aniTexture; // initial bomb texture
+	private Texture texture; // initial bomb texture
 	private TextureRegion bombTexture1, bombTexture2, bombTexture3; // bomb's split texture regions
+	private TextureRegion gameBackground;
+	private TextureRegion gameBackground2;
 	private BitmapFont font;
+
+	private TextureRegion[][] animatedBombTextureRegion;
+	private TextureRegion[][] animatedExplosionTextureRegion;
 
 	// sound assets
 	public Sound correct, boom;
@@ -52,6 +59,7 @@ public class GameRenderer {
 
 	// animation objects
 	private Animation[][] bombAnimation;
+	private Animation[][] explosionAnimation;
 
 	// game objects
 	private Bomb[][] bombs;
@@ -60,7 +68,7 @@ public class GameRenderer {
 
 	// SUPER MODE TESTS
 	private boolean superMode = false;
-	private Color COUNTDOWN_TIMER_COLOR_SUPER = new Color(0, 0, 1, 1);
+	private Color COUNTDOWN_TIMER_COLOR_SUPER = new Color(1, 1, 0, 1);
 	Music rrIntro;
 	Music rrSuper;
 	Music rrOut;
@@ -72,8 +80,8 @@ public class GameRenderer {
 	public GameRenderer(GameWorld world, float gameWidth, float gameHeight) {
 
 		this.world = world;
-
-		// this.midPointY = midPointY;
+		this.gameWidth = gameWidth;
+		this.gameHeight = gameHeight;
 
 		// initialise everything
 		cam = new OrthographicCamera();
@@ -95,26 +103,22 @@ public class GameRenderer {
 		prepareTransition(255, 255, 255, .5f);
 
 	}
-	
-	private TextureRegion[][] animated;
 
 	private void initAssets() {
 		texture = AssetLoader.texture;
-		aniTexture = AssetLoader.aniTexture;
-		
-		animated = TextureRegion.split(aniTexture, 135, 135);
-		
-		for (int i = 0; i < animated[0].length; i++){
-			animated[0][i].flip(false, true);
+		gameBackground = AssetLoader.gameBackground;
+		gameBackground2 = AssetLoader.gameBackground2;
+		animatedBombTextureRegion = AssetLoader.animatedBomb;
+		animatedExplosionTextureRegion = AssetLoader.animatedExplosion;
+
+		for (int i = 0; i < animatedBombTextureRegion[0].length; i++) {
+			animatedBombTextureRegion[0][i].flip(false, true);
+		}
+		for (int i = 0; i < animatedExplosionTextureRegion[0].length; i++) {
+			animatedExplosionTextureRegion[0][i].flip(false, true);
 		}
 
-		// WHY DOESNT THIS WORK!?!?!
-		// bombTexture1 = AssetLoader.bombTexture1;
-		// bombTexture2 = AssetLoader.bombTexture1;
-		// bombTexture3 = AssetLoader.bombTexture1;
-		
-		
-
+		// MOVE INTO ASSETS
 		bombTexture1 = new TextureRegion(texture, 0, 0, 50, 50);
 		bombTexture2 = new TextureRegion(texture, 50, 0, 50, 50);
 		bombTexture3 = new TextureRegion(texture, 100, 0, 50, 50);
@@ -198,13 +202,6 @@ public class GameRenderer {
 
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-		// clear screen
-		if (superMode) { // SUPERMOOOOOOOOOODE!!!!!!!!!!!!!!
-			Gdx.gl.glClearColor(0.4f, 0f, 0.25f, 1f);
-		} else {
-			Gdx.gl.glClearColor(0, 0, 0, 1);
-		}
-
 		batcher.begin();
 		// batcher.disableBlending();
 		batcher.enableBlending();
@@ -213,14 +210,22 @@ public class GameRenderer {
 			for (SimpleButton button : menuButtons) {
 				button.draw(batcher);
 			}
+			drawHighScore(world.getScore());
 		} else if (world.isRunning()) {
+
+			// clear screen
+			if (superMode) { // SUPERMOOOOOOOOOODE!!!!!!!!!!!!!!
+				batcher.draw(gameBackground, 0, 0, gameWidth, gameHeight);
+			} else {
+				batcher.draw(gameBackground2, 0, 0, gameWidth, gameHeight);
+			}
 
 			// random generator
 			chargeRandomBomb(delta);
 
 			// draw standard bomb
-			for (int i = 0; i < bombs.length; i++) { // do columns
-				for (int j = 0; j < bombs.length; j++) { // do rows
+			for (int i = 0; i < world.getBombColumns(); i++) { // do columns
+				for (int j = 0; j < world.getBombRows(); j++) { // do rows
 
 					// if not charged
 					if (!bombs[i][j].isCharged()) {
@@ -235,7 +240,6 @@ public class GameRenderer {
 
 			int score = world.getScore();
 			drawScore(score);
-			drawHighScore(score);
 			handleCountdownTimer(delta);
 			handleSuperModeTimer(delta);
 
@@ -260,7 +264,7 @@ public class GameRenderer {
 				String text = "SUPER:" + String.format("%.03f", superModeTimer);
 
 				float boundWidth = font.getBounds(text).width;
-				font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, cam.viewportHeight / 2 - (3 * font.getXHeight()) + (3 * 5));
+				font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, 20);
 			}
 		}
 	}
@@ -279,7 +283,7 @@ public class GameRenderer {
 		String text = "Time:" + String.format("%.03f", countdownTimer);
 
 		float boundWidth = font.getBounds(text).width;
-		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, cam.viewportHeight / 2 - (2 * font.getXHeight()) + (2 * 5));
+		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, 790);
 	}
 
 	public void restart() {
@@ -300,7 +304,7 @@ public class GameRenderer {
 		String text = "Score:" + score;
 
 		float boundWidth = font.getBounds(text).width;
-		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, cam.viewportHeight / 2);
+		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, 705);
 	}
 
 	private void drawHighScore(int score) {
@@ -312,7 +316,7 @@ public class GameRenderer {
 		String text = "High Score:" + AssetLoader.getHighScore();
 
 		float boundWidth = font.getBounds(text).width;
-		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, cam.viewportHeight / 2 - font.getXHeight() + 5);
+		font.draw(batcher, text, cam.viewportWidth / 2 - boundWidth / 2, 850);
 	}
 
 	private void chargeRandomBomb(float delta) {
@@ -321,14 +325,14 @@ public class GameRenderer {
 			int row = 0;
 			int col = 0;
 			do {
-				row = randomGenerator();
-				col = randomGenerator();
+				row = generateRandomRow();
+				col = generateRandomCol();
 
-				if (!bombs[row][col].isCharged()) {
-					bombs[row][col].setCharged(true);
+				if (!bombs[col][row].isCharged()) {
+					bombs[col][row].setCharged(true);
 				}
 
-			} while (!bombs[row][col].isCharged());
+			} while (!bombs[col][row].isCharged());
 
 			// reset countdown
 			if (superMode) {
@@ -339,15 +343,21 @@ public class GameRenderer {
 		}
 	}
 
-	private int randomGenerator() {
+	private int generateRandomRow() {
 		Random rand = new Random();
-		int random = rand.nextInt(bombs.length);
+		int random = rand.nextInt(world.getBombRows());
+		return random;
+	}
+
+	private int generateRandomCol() {
+		Random rand = new Random();
+		int random = rand.nextInt(world.getBombColumns());
 		return random;
 	}
 
 	private void drawStaticBomb(int i, int j) {
-//		batcher.draw(bombTexture1, bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
-		batcher.draw(animated[0][0], bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width, bombs[i][j].getBomb().height);
+		batcher.draw(animatedBombTextureRegion[0][0], bombs[i][j].getBomb().x, bombs[i][j].getBomb().y, bombs[i][j].getBomb().width,
+				bombs[i][j].getBomb().height);
 	}
 
 	private void drawSingleBomb(float delta, int i, int j) {
@@ -355,48 +365,85 @@ public class GameRenderer {
 		float currentStateTime = bombs[i][j].getStateTime() + delta;
 		bombs[i][j].setStateTime(currentStateTime);
 
-		// draw animation
-		if (!bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
-			batcher.draw(bombAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX(), bombs[i][j].getY(),
-					bombs[i][j].getWidth() / 2.0f, bombs[i][j].getHeight() / 2.0f, bombs[i][j].getWidth(), bombs[i][j].getHeight(), 1, 1, 0);
-		}
-		
-		//explode
-		if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) >= 6 && !bombs[i][j].isExploded()) {
-//			bombs[i][j].setCharged(false);
-//			bombs[i][j].setStateTime(0);
-			bombs[i][j].setExploded(true);
-			System.out.println("ur too slow mate, bomb exploded!");
-			boom.play();
-			world.subtractScore(1);
-		}
-		
+		// if not exploded
+		if (!bombs[i][j].isExploded()) {
 
-		// reset charge when animation finished
-		if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) == 10) {
-//		if (bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
-			bombs[i][j].setCharged(false);
-			bombs[i][j].setStateTime(0);
-			bombs[i][j].setExploded(false);
-//			System.out.println("ur too slow mate, bomb exploded!");
-//			boom.play();
-//			world.subtractScore(1);
+			// if still within normal animation
+			if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) < 6) {
+				// draw normal animation
+				batcher.draw(bombAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX(), bombs[i][j].getY(),
+						bombs[i][j].getWidth() / 2.0f, bombs[i][j].getHeight() / 2.0f, bombs[i][j].getWidth(), bombs[i][j].getHeight(), 1, 1, 0);
+			} else {
+				// setup to draw explosion animation
+				bombs[i][j].setStateTime(0);
+				bombs[i][j].setExploded(true);
+
+				// play boom and subtract score
+				if (AssetLoader.getSfx()) {
+					boom.play();
+				}
+				world.subtractScore(1);
+				System.out.println("ur too slow bomb blew up, game over lad");
+			}
+		} else {
+			// check if explosion animation finished
+			if (explosionAnimation[i][j].getKeyFrameIndex(currentStateTime) < 3) {
+
+				int explosionWidth = explosionAnimation[0][0].getKeyFrame(0).getRegionWidth();
+				int explosionHeight = explosionAnimation[0][0].getKeyFrame(0).getRegionHeight();
+
+				// draw explosion animation
+				batcher.draw(explosionAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX() + (bombs[i][j].getWidth() / 2)
+						- (explosionWidth / 2), bombs[i][j].getY() + (bombs[i][j].getHeight() / 2) - (explosionHeight / 2), explosionWidth / 2.0f,
+						explosionHeight / 2.0f, explosionWidth, explosionHeight, 0.8f, 0.8f, 0);
+
+			} else {
+				bombs[i][j].setCharged(false);
+				bombs[i][j].setStateTime(0);
+				bombs[i][j].setExploded(false);
+			}
+
 		}
+
+		// // explode
+		// if (bombAnimation[i][j].getKeyFrameIndex(currentStateTime) >= 6 && !bombs[i][j].isExploded()) {
+		// bombs[i][j].setExploded(true);
+		// System.out.println("ur too slow mate, bomb exploded!");
+		//
+		// if (AssetLoader.getSfx()) {
+		// boom.play();
+		// }
+		//
+		// world.subtractScore(1);
+		// }
+		//
+		// // draw animation
+		// if (!bombAnimation[i][j].isAnimationFinished(currentStateTime)) {
+		// batcher.draw(bombAnimation[i][j].getKeyFrame(currentStateTime, false), bombs[i][j].getX(), bombs[i][j].getY(),
+		// bombs[i][j].getWidth() / 2.0f, bombs[i][j].getHeight() / 2.0f, bombs[i][j].getWidth(), bombs[i][j].getHeight(), 1, 1, 0);
+		// }
+		//
+		// // reset charge when animation finished
+		// if (explosionAnimation[i][j].getKeyFrameIndex(currentStateTime) == 3) {
+		// bombs[i][j].setCharged(false);
+		// bombs[i][j].setStateTime(0);
+		// bombs[i][j].setExploded(false);
+		// }
 	}
 
 	private void setupBombGraphics() {
-//		TextureRegion[] bombTexture = { bombTexture2, bombTexture3 };
 
-		bombAnimation = new Animation[bombs.length][bombs.length];
+		bombAnimation = new Animation[world.getBombColumns()][world.getBombRows()];
+		explosionAnimation = new Animation[world.getBombColumns()][world.getBombRows()];
 
-		for (int i = 0; i < bombs.length; i++) { // do columns
-			for (int j = 0; j < bombs.length; j++) { // do rows
-				
-//				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, bombTexture);
-//				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
-				
-				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, animated[0]);
+		for (int i = 0; i < world.getBombColumns(); i++) { // do columns
+			for (int j = 0; j < world.getBombRows(); j++) { // do rows
+
+				bombAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, animatedBombTextureRegion[0]);
 				bombAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
+
+				explosionAnimation[i][j] = new Animation(BOMB_ANIMATION_FRAME_TIME, animatedExplosionTextureRegion[0]);
+				explosionAnimation[i][j].setPlayMode(Animation.PlayMode.NORMAL);
 			}
 		}
 	}
@@ -424,10 +471,9 @@ public class GameRenderer {
 			Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
 			shapeRenderer.begin(ShapeType.Filled);
 			shapeRenderer.setColor(transitionColor.r, transitionColor.g, transitionColor.b, alpha.getValue());
-			shapeRenderer.rect(0, 0, 300, 300);
+			shapeRenderer.rect(0, 0, 540, 960);
 			shapeRenderer.end();
 			Gdx.gl.glDisable(GL20.GL_BLEND);
-
 		}
 	}
 }

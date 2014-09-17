@@ -15,8 +15,9 @@ public class SimpleButton {
 
 	private boolean isPressed = false;
 
-	public SimpleButton(float x, float y, float width, float height,
-			TextureRegion buttonUp, TextureRegion buttonDown) {
+	private boolean switchOn = false;
+
+	public SimpleButton(float x, float y, float width, float height, TextureRegion buttonUp, TextureRegion buttonDown) {
 		this.x = x;
 		this.y = y;
 		this.width = width;
@@ -25,7 +26,6 @@ public class SimpleButton {
 		this.buttonDown = buttonDown;
 
 		bounds = new Rectangle(x, y, width, height);
-
 	}
 
 	public boolean isClicked(int screenX, int screenY) {
@@ -33,7 +33,8 @@ public class SimpleButton {
 	}
 
 	public void draw(SpriteBatch batcher) {
-		if (isPressed) {
+
+		if (isSwitchOn() || isPressed) {
 			batcher.draw(buttonDown, x, y, width, height);
 		} else {
 			batcher.draw(buttonUp, x, y, width, height);
@@ -51,16 +52,24 @@ public class SimpleButton {
 	}
 
 	public boolean isTouchUp(int screenX, int screenY) {
-		
+
 		// It only counts as a touchUp if the button is in a pressed state.
 		if (bounds.contains(screenX, screenY) && isPressed) {
 			isPressed = false;
 			return true;
 		}
-		
+
 		// Whenever a finger is released, we will cancel any presses.
 		isPressed = false;
 		return false;
+	}
+
+	public boolean isSwitchOn() {
+		return switchOn;
+	}
+
+	public void setSwitchOn(boolean switchOn) {
+		this.switchOn = switchOn;
 	}
 
 }

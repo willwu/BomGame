@@ -20,6 +20,7 @@ public class BomGame extends Game {
 		AssetLoader.load();
 		splashScreen = new SplashScreen(this);
 		setScreen(splashScreen);
+//		setScreen(new GameScreen());
 		
 //		gameScreen = new GameScreen();
 		

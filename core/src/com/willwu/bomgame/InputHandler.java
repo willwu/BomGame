@@ -15,7 +15,7 @@ public class InputHandler implements InputProcessor {
 
 	private List<SimpleButton> menuButtons;
 
-	private SimpleButton playButton;
+	private SimpleButton playButton, sfxButton;
 
 	public InputHandler(GameWorld world, float scaleFactorX, float scaleFactorY) {
 		this.world = world;
@@ -26,8 +26,16 @@ public class InputHandler implements InputProcessor {
 		this.scaleFactorY = scaleFactorY;
 
 		menuButtons = new ArrayList<SimpleButton>();
-		playButton = new SimpleButton(50, 50, 50, 50, AssetLoader.bombTexture2, AssetLoader.bombTexture3);
+		playButton = new SimpleButton(50, 50, 200, 200, AssetLoader.bombTexture2, AssetLoader.bombTexture3);
 		getMenuButtons().add(playButton);
+
+		sfxButton = new SimpleButton(50, 300, 200, 200, AssetLoader.bombTexture1, AssetLoader.bombTexture3);
+		if (AssetLoader.getSfx()) {
+			sfxButton.setSwitchOn(true);
+		}else{
+			sfxButton.setSwitchOn(false);
+		}
+		getMenuButtons().add(sfxButton);
 	}
 
 	@Override
@@ -55,11 +63,12 @@ public class InputHandler implements InputProcessor {
 
 		if (world.isMenu()) {
 			playButton.isTouchDown(screenX, screenY);
+			sfxButton.isTouchDown(screenX, screenY);
 		}
 
 		if (world.isRunning()) {
-			for (int i = 0; i < bombs.length; i++) { // do columns
-				for (int j = 0; j < bombs.length; j++) { // do rows
+			for (int i = 0; i < world.getBombColumns(); i++) { // do columns
+				for (int j = 0; j < world.getBombRows(); j++) { // do rows
 
 					// check if touched a bomb
 					if (bombs[i][j].getBomb().contains(screenX, screenY)) {
@@ -76,11 +85,21 @@ public class InputHandler implements InputProcessor {
 	public boolean touchUp(int screenX, int screenY, int pointer, int button) {
 		screenX = scaleX(screenX);
 		screenY = scaleY(screenY);
-		
+
 		if (world.isMenu()) {
 			if (playButton.isTouchUp(screenX, screenY)) {
 				world.restart();
 				world.setRunning();
+				return true;
+			} else if (sfxButton.isTouchUp(screenX, screenY)) {
+				if (AssetLoader.getSfx()) {
+					sfxButton.setSwitchOn(false);
+					AssetLoader.setSfx(false);
+				} else {
+					sfxButton.setSwitchOn(true);
+					AssetLoader.setSfx(true);
+				}
+
 				return true;
 			}
 		}
